@@ -64,10 +64,28 @@ export default async function Profile({ id }) {
 
 ### 1. First steps
 
+<video
+  controls
+  playsinline
+  loop
+  src="videos/server-rendered-html.mp4"
+  style="max-width: 100%;"
+/>
+
 ### 2. Client-side navigation
 
 - SPAs don’t reload the page when navigating
 - Client-side navigation will override browser navigation
+
+#### What we’ll build
+
+<video
+  controls
+  playsinline
+  loop
+  src="videos/client-side-navigation.mp4"
+  style="max-width: 100%;"
+/>
 
 #### How it’ll work
 
@@ -158,19 +176,41 @@ export default async function Profile({ id }) {
      }
      ```
 
+### 3. Rehydration
+
+#### What we’ll build
+
 <video
   controls
   playsinline
   loop
-  src="client-side-navigation.mp4"
+  src="videos/rehydration.mp4"
   style="max-width: 100%;"
 />
 
-### 3. Rehydration
-
 ### 4. Async Components
 
+#### What we’ll build
+
+<video
+  controls
+  playsinline
+  loop
+  src="videos/async-components.mp4"
+  style="max-width: 100%;"
+/>
+
 ### 5. Client Components
+
+#### What we’ll build
+
+<video
+  controls
+  playsinline
+  loop
+  src="videos/client-components.mp4"
+  style="max-width: 100%;"
+/>
 
 ## Exercises
 
