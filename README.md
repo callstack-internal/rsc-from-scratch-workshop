@@ -64,13 +64,7 @@ export default async function Profile({ id }) {
 
 ### 1. First steps
 
-<video
-  controls
-  playsinline
-  loop
-  src="videos/server-rendered-html.mp4"
-  style="max-width: 100%;"
-/>
+https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/1edf8367-d991-4713-a648-e880f5b57058
 
 ### 2. Client-side navigation
 
@@ -79,13 +73,7 @@ export default async function Profile({ id }) {
 
 #### What we’ll build
 
-<video
-  controls
-  playsinline
-  loop
-  src="videos/client-side-navigation.mp4"
-  style="max-width: 100%;"
-/>
+https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c3b06001-0363-4f3e-8d9b-71c27c5aec6c
 
 #### How it’ll work
 
@@ -180,37 +168,19 @@ export default async function Profile({ id }) {
 
 #### What we’ll build
 
-<video
-  controls
-  playsinline
-  loop
-  src="videos/rehydration.mp4"
-  style="max-width: 100%;"
-/>
+https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/a0d1642b-ae67-4abb-ab21-dc0e43240984
 
 ### 4. Async Components
 
 #### What we’ll build
 
-<video
-  controls
-  playsinline
-  loop
-  src="videos/async-components.mp4"
-  style="max-width: 100%;"
-/>
+https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/9e40b1f7-c818-4a43-956f-af4acf93a056
 
 ### 5. Client Components
 
 #### What we’ll build
 
-<video
-  controls
-  playsinline
-  loop
-  src="videos/client-components.mp4"
-  style="max-width: 100%;"
-/>
+https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/9b0d97fe-e314-42e3-a441-119408245702
 
 ## Exercises
 
