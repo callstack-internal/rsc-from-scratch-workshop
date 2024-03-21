@@ -66,6 +66,106 @@ export default async function Profile({ id }) {
 
 ### 2. Client-side navigation
 
+- SPAs don’t reload the page when navigating
+- Client-side navigation will override browser navigation
+
+#### How it’ll work
+
+1. Load some JavaScript on the client
+
+   - Create a file `src/client.js`
+   - Update our router in `src/server.js` to serve this file
+
+     ```jsx
+     router.get('/client.js', (ctx) => {
+       const stream = createReadStream(join(import.meta.dirname, ctx.path));
+
+       ctx.type = 'text/javascript';
+       ctx.body = stream;
+     });
+     ```
+
+   - Add a script tag to the HTML we return
+
+     ```js
+     const clientHtml = `
+       ${renderToString(jsx)}
+
+       <script type="module" src="/client.js"></script>
+     `;
+
+     ctx.type = 'text/html';
+     ctx.body = clientHtml;
+     ```
+
+2. In `src/client.js`, intercept navigation and dynamically replace the content
+
+   - Intercept link clicks
+
+     ```js
+     document.addEventListener('click', (event) => {
+       if (e.target.tagName !== 'A') {
+         return;
+       }
+
+       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+         return;
+       }
+
+       const href = e.target.getAttribute('href');
+
+       if (!href.startsWith('/')) {
+         return;
+       }
+
+       // Prevent the navigation to the new page
+       e.preventDefault();
+
+       // Update the browser URL bar without a page refresh
+       window.history.pushState(null, null, href);
+
+       // We'll implement this function later
+       navigate(href);
+     });
+     ```
+
+   - Intercept browser back/forward buttons
+
+     ```js
+     window.addEventListener('popstate', () => {
+       navigate(window.location.pathname);
+     });
+     ```
+
+   - Fetch the new page and replace the content
+
+     ```js
+     async function fetchClientHTML(pathname) {
+       const response = await fetch(pathname);
+       return response.text();
+     }
+
+     let currentPathname = window.location.pathname;
+
+     async function navigate(href) {
+       currentPathname = pathname;
+
+       const clientHtml = await fetchClientHTML(pathname);
+
+       if (pathname === currentPathname) {
+         document.body.innerHTML = clientHtml;
+       }
+     }
+     ```
+
+<video
+  controls
+  playsinline
+  loop
+  src="client-side-navigation.mp4"
+  style="max-width: 100%;"
+/>
+
 ### 3. Rehydration
 
 ### 4. Async Components
