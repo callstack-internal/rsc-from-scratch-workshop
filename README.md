@@ -64,7 +64,106 @@ export default async function Profile({ id }) {
 
 ### 1. First steps
 
+- Basic server-side rendered multi-page app
+- Pages don't include any JavaScript
+- Clicking a link reloads the page
+
 <https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/1edf8367-d991-4713-a648-e880f5b57058>
+
+#### Environment setup
+
+- Node.js 20
+- Yarn 1
+
+#### Project setup
+
+1. Clone and set up the starter repo.
+
+   Clone with SSH:
+
+   ```sh
+   git clone --single-branch --branch starter git@github.com:callstack-internal/rsc-from-scratch-workshop.git
+   ```
+
+   Or with HTTPS:
+
+   ```sh
+   git clone --single-branch --branch starter https://github.com/callstack-internal/rsc-from-scratch-workshop.git
+   ```
+
+   Change the branch to `main` and remove the remote origin:
+
+   ```sh
+   git branch -M main
+   git remote remove origin
+   ```
+
+   Create your own repository on GitHub and push the code to it to start working on it.
+
+2. Install the dependencies by running:
+
+   ```sh
+   yarn
+   ```
+
+3. Start the server to see the app running:
+
+   ```sh
+   yarn start
+   ```
+
+   Then open <http://localhost:5172> in your browser.
+
+#### Project Overview
+
+##### File structure
+
+```sh
+.
+├── src                   # Source code
+│   ├── app               # React components
+│   │   ├── _document.jsx # Wrapper for all pages
+│   │   ├── index.jsx     # Home page (`/`)
+│   │   └── pokemon.jsx   # Pokemon page (`/pokemon?name=bulbasaur`)
+│   └── server.jsx        # Server entry point
+├── README.md
+├── package.json
+├── tsconfig.json
+└── yarn.lock
+```
+
+##### Dependencies
+
+- [`tsx`](https://github.com/privatenumber/tsx) for watching, compiling and running the server
+- [`koa`](https://koajs.com) for the server with [`@koa/router`](https://github.com/koajs/router) for server-side routing
+- [`react`](https://react.dev) and [`react-dom`](https://react.dev/reference/react-dom) for rendering components.
+
+##### Server-side routing
+
+When a page is requested, the router loads the corresponding component and renders it to HTML:
+
+```js
+router.get('/:path*', async (ctx) => {
+  const filepath = `./app/${ctx.params.path ?? 'index'}.jsx`;
+
+  if (!(await stat(join(import.meta.dirname, filepath)))) {
+    ctx.status = 404;
+    return;
+  }
+
+  const { default: Document } = await import('./app/_document.jsx');
+  const { default: Page } = await import(filepath);
+
+  const html = ReactDOMServer.renderToString(
+    <Document>
+      <Page query={ctx.request.query} />
+    </Document>
+  );
+
+  ctx.type = 'text/html';
+  ctx.body = html;
+});
+```
 
 ### 2. Client-side navigation
 
