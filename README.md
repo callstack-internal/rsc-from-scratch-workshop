@@ -548,9 +548,9 @@ router.get('/:path*', async (ctx) => {
 
 #### How it will work
 
-1. Make components async
+1. Make components async to fetch data from an API
 
-   - Change `Index` component to an `async` function
+   - Change `Index` component to an `async` function:
 
      ```js
      export default async function Index() {
@@ -558,7 +558,7 @@ router.get('/:path*', async (ctx) => {
      }
      ```
 
-   - Change hardcoded pokemon array to `fetch` call to API
+   - Change hardcoded `pokemons` array to a `fetch` call to API:
 
      ```js
      const data = await fetch(
@@ -568,62 +568,62 @@ router.get('/:path*', async (ctx) => {
 
    - Repeat this step for `Pokemon` component. Use `https://pokeapi.co/api/v2/pokemon/${query.name}` endpoint.
 
-2. Adjust `src/server.jsx` to handle `async` components - Make `respond`, `renderJSXToClientJSX`, and `Component` an `async` function, make sure to `await` them where necessary
+2. Adjust `src/server.jsx` to handle `async` components - Make `respond`, `renderJSXToClientJSX`, and `Component` an `async` function, make sure to `await` them where necessary:
 
-    ```js
-    await respond(...);
-    ```
+   ```js
+   await respond(...);
+   ```
 
-    ```js
-    async function respond(ctx, jsx) {
-      const clientJSX = await renderJSXToClientJSX(jsx);
+   ```js
+   async function respond(ctx, jsx) {
+     const clientJSX = await renderJSXToClientJSX(jsx);
 
-      ...
-    }
-    ```
+     // ...
+   }
+   ```
 
-    ```js
-    async function renderJSXToClientJSX(jsx) {
-      if (
-        typeof jsx === 'string' ||
-        typeof jsx === 'number' ||
-        typeof jsx === 'boolean' ||
-        jsx == null
-      ) {
-        return jsx;
-      } else if (Array.isArray(jsx)) {
-        return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
-      } else if (jsx != null && typeof jsx === 'object') {
-        if (jsx.$$typeof === Symbol.for('react.element')) {
-          if (typeof jsx.type === 'string') {
-            return {
-              ...jsx,
-              props: await renderJSXToClientJSX(jsx.props),
-            };
-          } else if (typeof jsx.type === 'function') {
-            const Component = jsx.type;
-            const props = jsx.props;
-            const returnedJsx = await Component(props);
+   ```js
+   async function renderJSXToClientJSX(jsx) {
+     if (
+       typeof jsx === 'string' ||
+       typeof jsx === 'number' ||
+       typeof jsx === 'boolean' ||
+       jsx == null
+     ) {
+       return jsx;
+     } else if (Array.isArray(jsx)) {
+       return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
+     } else if (jsx != null && typeof jsx === 'object') {
+       if (jsx.$$typeof === Symbol.for('react.element')) {
+         if (typeof jsx.type === 'string') {
+           return {
+             ...jsx,
+             props: await renderJSXToClientJSX(jsx.props),
+           };
+         } else if (typeof jsx.type === 'function') {
+           const Component = jsx.type;
+           const props = jsx.props;
+           const returnedJsx = await Component(props);
 
-            return renderJSXToClientJSX(returnedJsx);
-          } else {
-            throw new Error('Not implemented.');
-          }
-        } else {
-          return Object.fromEntries(
-            await Promise.all(
-              Object.entries(jsx).map(async ([propName, value]) => [
-                propName,
-                await renderJSXToClientJSX(value),
-              ])
-            )
-          );
-        }
-      } else {
-        throw new Error('Not implemented');
-      }
-    }
-    ```
+           return renderJSXToClientJSX(returnedJsx);
+         } else {
+           throw new Error('Not implemented.');
+         }
+       } else {
+         return Object.fromEntries(
+           await Promise.all(
+             Object.entries(jsx).map(async ([propName, value]) => [
+               propName,
+               await renderJSXToClientJSX(value),
+             ])
+           )
+         );
+       }
+     } else {
+       throw new Error('Not implemented');
+     }
+   }
+   ```
 
 #### Diff
 
@@ -641,7 +641,13 @@ router.get('/:path*', async (ctx) => {
 
 #### How it will work
 
-1. Add client component in `src/app/favorite.jsx`
+1. Create a client component in `src/app/favorite.jsx`
+
+   Here we use:
+
+   - `useState` to manage the favorite state
+   - `useEffect` with `localStorage` to persist the favorite state of a Pokemon
+   - `onClick` event handler to toggle the favorite state on button click
 
    ```js
    'use client';
@@ -674,7 +680,7 @@ router.get('/:path*', async (ctx) => {
    }
    ```
 
-2. Import `Favorite` component and use it in `Pokemon`
+2. Import `Favorite` (client component) and use it in `Pokemon` (server component):
 
    ```js
    import React from 'react';
@@ -684,6 +690,7 @@ router.get('/:path*', async (ctx) => {
      const data = await fetch(
        `https://pokeapi.co/api/v2/pokemon/${query.name}`
      ).then((res) => res.json());
+
      return (
        <div>
          <a href="/">Home</a>
@@ -699,84 +706,190 @@ router.get('/:path*', async (ctx) => {
    }
    ```
 
-3. Install `esbuild` as a dependency. It will be used to transpile jsx.
+3. Mock client components on the server by returning a reference to the client component
 
-   ```
-   yarn add esbuild
-   ```
+   - Client components cannot be called as a function in `renderJSXToClientJSX` since they contain hooks and cannot be serialized as they contain functions such as `onClick`.
 
-4. Create new file in `src/loader.js`
-
-   ```js
-   import { relative } from 'path';
-   import { fileURLToPath } from 'url';
-   import { renderToString } from 'react-dom/server';
-
-   export async function load(url, context, defaultLoad) {
-     const result = await defaultLoad(url, context, defaultLoad);
-
-     if (result.format === 'module' && !url.includes('?original')) {
-       const code = result.source.toString();
-
-       if (/['"]use client['"]/.test(code)) {
-         const source = `
-           export default {
-             $$typeof: Symbol.for('react.client.reference'),
-             name: 'default',
-             filename: ${JSON.stringify(
-               relative(import.meta.dirname, fileURLToPath(url))
-             )},
-           }
-         `;
-
-         return { source, format: 'module' };
-       }
-     }
-
-     return result;
-   }
-   ```
-
-5. Update `src/client.js` to load client modules when parsing JSX.
-
-   ```js
-   function parseJSX(key, value) {
-     if (value === '$RE') {
-       return Symbol.for('react.element');
-     } else if (typeof value === 'string' && value.startsWith('$$')) {
-       return value.slice(1);
-     } else if (value?.$$typeof === '$RE_M') {
-       return window.__CLIENT_MODULES__[value.filename];
-     } else {
-       return value;
-     }
-   }
-   ```
-
-6. Update `src/server.jsx` to transform client components using `esbuild`
-
-   - Add all necessary imports
+     So instead of using the actual implementation, we send a reference to the module in the JSX payload. The client reference object looks like this:
 
      ```js
-     import Router from '@koa/router';
-     import { transform } from 'esbuild';
-     import Koa from 'koa';
-     import { AsyncLocalStorage } from 'node:async_hooks';
-     import { readFile, readdir, stat } from 'node:fs/promises';
-     import { register } from 'node:module';
-     import { join } from 'node:path';
-     import { renderToString } from 'react-dom/server';
+     {
+       $$typeof: Symbol.for('react.client.reference'),
+       name: 'default',
+       filename: 'app/favorite.jsx',
+     }
      ```
 
-   - Use `register` method from `node:module` to hook into module resolution and run `loader` before before running application code. Add it after imports
+   - To mock the client component, we need to hook into the `import` mechanism and return the client reference object instead of the actual module.
+
+     We can do this by creating a custom loader that will be used by the `import` - create a new file `src/loader.js`:
 
      ```js
+     import { relative } from 'path';
+     import { fileURLToPath } from 'url';
+     import { renderToString } from 'react-dom/server';
+
+     export async function load(url, context, defaultLoad) {
+       const result = await defaultLoad(url, context, defaultLoad);
+
+       if (result.format === 'module') {
+         const code = result.source.toString();
+
+         if (/['"]use client['"]/.test(code)) {
+           const source = `
+             export default {
+               $$typeof: Symbol.for('react.client.reference'),
+               name: 'default',
+               filename: ${JSON.stringify(
+                 relative(import.meta.dirname, fileURLToPath(url))
+               )},
+             }
+           `;
+
+           return { source, format: 'module' };
+         }
+       }
+
+       return result;
+     }
+     ```
+
+   - Register the custom loader in `src/server.jsx` by adding the following line after the imports:
+
+     ```js
+     import { register } from 'node:module';
+
+     // ...
+
      register('./loader.js', import.meta.url);
      ```
 
-   - Change `router` from handling only `/client.js` route to return any `js/jsx` file to the client
+4. Update `renderJSXToClientJSX` and `stringifyJSX` to handle client components
+
+   - Add the following code to `renderJSXToClientJSX`:
 
      ```js
+     } else if (jsx.type.$$typeof === Symbol.for('react.client.reference')) {
+       return jsx;
+     ```
+
+   - Add the following code to `stringifyJSX`:
+
+     ```js
+     } else if (value === Symbol.for('react.client.reference')) {
+       return '$RE_M';
+     ```
+
+5. Handle mocked client components during SSR
+
+   - During SSR we need the actual component to render the HTML. Add support for a query param `?original` in our loader to return the actual module when requested:
+
+     ```js
+     if (result.format === 'module' && !url.includes('?original')) {
+     ```
+
+   - Update our code that renders the HTML string to pass `ssr: true` when calling `renderJSXToClientJSX`. We use `AsyncLocalStorage` to make this simpler.
+
+     Somewhere at the top level:
+
+     ```js
+     import { AsyncLocalStorage } from 'node:async_hooks';
+
+     // ...
+
+     const storage = new AsyncLocalStorage();
+     ```
+
+     Then pass `ssr: true` when calling `renderJSXToClientJSX`:
+
+     ```js
+     const clientHtml = html`
+       ${renderToString(
+         await storage.run({ ssr: true }, () => renderJSXToClientJSX(jsx))
+       )}
+
+       // ...
+     ```
+
+   - Update `renderJSXToClientJSX` to load the actual module when `ssr: true`:
+
+     ```js
+     } else if (jsx.type.$$typeof === Symbol.for('react.client.reference')) {
+       const ssr = storage.getStore()?.ssr;
+
+       if (!ssr) {
+         return jsx;
+       }
+
+       const m = await import(`./${jsx.type.filename}?original`);
+
+       return { ...jsx, type: m[jsx.type.name] };
+     ```
+
+6. Handle client component references on the client
+
+   - When sending HTML, also send a map of client components with import statements that the client can use to render the client components:
+
+     ```js
+     const files = await readdir(join(import.meta.dirname, 'app'));
+     const imports = await Promise.all(
+       files.map((file) => import(join(import.meta.dirname, 'app', file)))
+     );
+
+     const modules = imports.reduce((acc, mod, i) => {
+       if (mod.default?.$$typeof === Symbol.for('react.client.reference')) {
+         acc += `
+            import $${i} from './${mod.default.filename}';
+            window.__CLIENT_MODULES__['${mod.default.filename}'] = $${i};
+          `;
+       }
+
+       return acc;
+     }, `window.__CLIENT_MODULES__ = {};`);
+
+     const clientHtml = html`
+       ${renderToString(
+         await storage.run({ ssr: true }, () => renderJSXToClientJSX(jsx))
+       )}
+
+       <script>
+         window.__INITIAL_CLIENT_JSX_STRING__ = ${JSON.stringify(
+           clientJSXString
+         ).replace(/</g, '\\u003c')};
+       </script>
+       <script type="importmap">
+         {
+           "imports": {
+             "react": "https://esm.sh/react@canary",
+             "react-dom/client": "https://esm.sh/react-dom@canary/client"
+           }
+         }
+       </script>
+       <script type="module">
+         ${modules};
+       </script>
+       <script type="module" src="/client.js"></script>
+     `;
+     ```
+
+     We're including all client modules in the initial payload for simplicity. In a real-world scenario, you would only include the modules that are used on the page.
+
+   - Add the ability to resolve the client component imports to our server.
+
+     First, install `esbuild` to compile JSX so we can serve plain JS files:
+
+     ```sh
+     yarn add esbuild
+     ```
+
+     Then update the router to serve the client component requests:
+
+     ```js
+     import { transform } from 'esbuild';
+     import { readFile, readdir, stat } from 'node:fs/promises';
+
+     // ...
+
      router.get('/(.*).(js|jsx)', async (ctx) => {
        const content = await readFile(
          join(import.meta.dirname, ctx.path),
@@ -789,8 +902,25 @@ router.get('/:path*', async (ctx) => {
        });
 
        ctx.type = 'text/javascript';
+       ctx.body = stream;
        ctx.body = transformed.code;
      });
+     ```
+
+   - Update `src/client.js` to load client modules when parsing JSX:
+
+     ```js
+     function parseJSX(key, value) {
+       if (value === '$RE') {
+         return Symbol.for('react.element');
+       } else if (typeof value === 'string' && value.startsWith('$$')) {
+         return value.slice(1);
+       } else if (value?.$$typeof === '$RE_M') {
+         return window.__CLIENT_MODULES__[value.filename];
+       } else {
+         return value;
+       }
+     }
      ```
 
 #### Diff
