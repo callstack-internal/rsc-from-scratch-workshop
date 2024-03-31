@@ -64,7 +64,7 @@ export default async function Profile({ id }) {
 
 ### 1. First steps
 
-https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/1edf8367-d991-4713-a648-e880f5b57058
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/1edf8367-d991-4713-a648-e880f5b57058>
 
 ### 2. Client-side navigation
 
@@ -73,7 +73,7 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/1
 
 #### What we’ll build
 
-https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c3b06001-0363-4f3e-8d9b-71c27c5aec6c
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c3b06001-0363-4f3e-8d9b-71c27c5aec6c>
 
 #### How it’ll work
 
@@ -83,10 +83,10 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c
    - Update our router in `src/server.js` to serve this file
 
      ```jsx
-     router.get("/client.js", (ctx) => {
+     router.get('/client.js', (ctx) => {
        const stream = createReadStream(join(import.meta.dirname, ctx.path));
 
-       ctx.type = "text/javascript";
+       ctx.type = 'text/javascript';
        ctx.body = stream;
      });
      ```
@@ -96,11 +96,11 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c
      ```js
      const clientHtml = `
        ${renderToString(jsx)}
-     
+
        <script type="module" src="/client.js"></script>
      `;
 
-     ctx.type = "text/html";
+     ctx.type = 'text/html';
      ctx.body = clientHtml;
      ```
 
@@ -109,8 +109,8 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c
    - Intercept link clicks
 
      ```js
-     document.addEventListener("click", (event) => {
-       if (e.target.tagName !== "A") {
+     document.addEventListener('click', (event) => {
+       if (e.target.tagName !== 'A') {
          return;
        }
 
@@ -118,9 +118,9 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c
          return;
        }
 
-       const href = e.target.getAttribute("href");
+       const href = e.target.getAttribute('href');
 
-       if (!href.startsWith("/")) {
+       if (!href.startsWith('/')) {
          return;
        }
 
@@ -138,7 +138,7 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c
    - Intercept browser back/forward buttons
 
      ```js
-     window.addEventListener("popstate", () => {
+     window.addEventListener('popstate', () => {
        navigate(window.location.pathname);
      });
      ```
@@ -168,7 +168,7 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/c
 
 #### What we’ll build
 
-https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/a0d1642b-ae67-4abb-ab21-dc0e43240984
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/a0d1642b-ae67-4abb-ab21-dc0e43240984>
 
 ### 4. Async Components
 
@@ -176,7 +176,7 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/a
 
 #### What we’ll build
 
-https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/9e40b1f7-c818-4a43-956f-af4acf93a056
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/9e40b1f7-c818-4a43-956f-af4acf93a056>
 
 #### How it will work
 
@@ -184,78 +184,78 @@ https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/9
 
    - Change `Index` component to an `async` function
 
-   ```js
-   export default async function Index() {
-    ...
-   }
-   ```
+     ```js
+     export default async function Index() {
+       ...
+     }
+     ```
 
    - Change hardcoded pokemon array to `fetch` call to API
 
+     ```js
+     const data = await fetch(
+       'https://pokeapi.co/api/v2/pokemon?limit=10&offset=0'
+     ).then((res) => res.json());
+     ```
+
+   Repeat this step for `Pokemon` component. Use `https://pokeapi.co/api/v2/pokemon/${query.name}` endpoint.
+
+2. Adjust `src/server.jsx` to handle `async` components - Make `respond`, `renderJSXToClientJSX`, and `Component` an `async` function, make sure to `await` them where necessary
+
    ```js
-   const data = await fetch(
-     "https://pokeapi.co/api/v2/pokemon?limit=10&offset=0"
-   ).then((res) => res.json());
+   await respond(...);
    ```
 
-Repeat this step for `Pokemon` component. Use `https://pokeapi.co/api/v2/pokemon/${query.name}` endpoint.
+   ```js
+   async function respond(ctx, jsx) {
+     const clientJSX = await renderJSXToClientJSX(jsx);
 
-2.  Adjust `src/server.jsx` to handle `async` components - Make `respond`, `renderJSXToClientJSX`, and `Component` an `async` function, make sure to `await` them where necessary
+     ...
+   }
+   ```
 
-    ```js
-    await respond(...);
-    ```
+   ```js
+   async function renderJSXToClientJSX(jsx) {
+     if (
+       typeof jsx === 'string' ||
+       typeof jsx === 'number' ||
+       typeof jsx === 'boolean' ||
+       jsx == null
+     ) {
+       return jsx;
+     } else if (Array.isArray(jsx)) {
+       return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
+     } else if (jsx != null && typeof jsx === 'object') {
+       if (jsx.$$typeof === Symbol.for('react.element')) {
+         if (typeof jsx.type === 'string') {
+           return {
+             ...jsx,
+             props: await renderJSXToClientJSX(jsx.props),
+           };
+         } else if (typeof jsx.type === 'function') {
+           const Component = jsx.type;
+           const props = jsx.props;
+           const returnedJsx = await Component(props);
 
-    ```js
-    async function respond(ctx, jsx) {
-      const clientJSX = await renderJSXToClientJSX(jsx);
-
-      ...
-    }
-    ```
-
-    ```js
-    async function renderJSXToClientJSX(jsx) {
-      if (
-        typeof jsx === "string" ||
-        typeof jsx === "number" ||
-        typeof jsx === "boolean" ||
-        jsx == null
-      ) {
-        return jsx;
-      } else if (Array.isArray(jsx)) {
-        return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
-      } else if (jsx != null && typeof jsx === "object") {
-        if (jsx.$$typeof === Symbol.for("react.element")) {
-          if (typeof jsx.type === "string") {
-            return {
-              ...jsx,
-              props: await renderJSXToClientJSX(jsx.props),
-            };
-          } else if (typeof jsx.type === "function") {
-            const Component = jsx.type;
-            const props = jsx.props;
-            const returnedJsx = await Component(props);
-
-            return renderJSXToClientJSX(returnedJsx);
-          } else {
-            throw new Error("Not implemented.");
-          }
-        } else {
-          return Object.fromEntries(
-            await Promise.all(
-              Object.entries(jsx).map(async ([propName, value]) => [
-                propName,
-                await renderJSXToClientJSX(value),
-              ])
-            )
-          );
-        }
-      } else {
-        throw new Error("Not implemented");
-      }
-    }
-    ```
+           return renderJSXToClientJSX(returnedJsx);
+         } else {
+           throw new Error('Not implemented.');
+         }
+       } else {
+         return Object.fromEntries(
+           await Promise.all(
+             Object.entries(jsx).map(async ([propName, value]) => [
+               propName,
+               await renderJSXToClientJSX(value),
+             ])
+           )
+         );
+       }
+     } else {
+       throw new Error('Not implemented');
+     }
+   }
+   ```
 
 ### 5. Client Components
 
@@ -263,163 +263,161 @@ Repeat this step for `Pokemon` component. Use `https://pokeapi.co/api/v2/pokemon
 
 #### What we’ll build
 
-https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/9b0d97fe-e314-42e3-a441-119408245702
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/9b0d97fe-e314-42e3-a441-119408245702>
 
 #### How it will work
 
 1. Add client component in `src/app/favorite.jsx`
 
-```js
-"use client";
+   ```js
+   'use client';
 
-import React from "react";
+   import React from 'react';
 
-export default function Favorite({ name }) {
-  const [isFavorite, setIsFavorite] = React.useState(null);
+   export default function Favorite({ name }) {
+     const [isFavorite, setIsFavorite] = React.useState(null);
 
-  React.useEffect(() => {
-    const isFavorite = localStorage.getItem(`${name}:favorite`) === "true";
+     React.useEffect(() => {
+       const isFavorite = localStorage.getItem(`${name}:favorite`) === 'true';
 
-    setIsFavorite(isFavorite);
-  }, [name]);
+       setIsFavorite(isFavorite);
+     }, [name]);
 
-  const onClick = () => {
-    setIsFavorite(!isFavorite);
-    localStorage.setItem(`${name}:favorite`, String(!isFavorite));
-  };
+     const onClick = () => {
+       setIsFavorite(!isFavorite);
+       localStorage.setItem(`${name}:favorite`, String(!isFavorite));
+     };
 
-  return (
-    <button disabled={isFavorite == null} onClick={onClick}>
-      {isFavorite == null
-        ? "…"
-        : isFavorite
-        ? "Remove Favorite"
-        : "Add Favorite"}
-    </button>
-  );
-}
-```
+     return (
+       <button disabled={isFavorite == null} onClick={onClick}>
+         {isFavorite == null
+           ? '…'
+           : isFavorite
+           ? 'Remove Favorite'
+           : 'Add Favorite'}
+       </button>
+     );
+   }
+   ```
 
 2. Import `Favorite` component and use it in `Pokemon`
 
-```js
-import React from "react";
-import Favorite from "./favorite.jsx";
+   ```js
+   import React from 'react';
+   import Favorite from './favorite.jsx';
 
-export default async function Pokemon({ query }) {
-  const data = await fetch(
-    `https://pokeapi.co/api/v2/pokemon/${query.name}`
-  ).then((res) => res.json());
-  return (
-    <div>
-      <a href="/">Home</a>
-      <h1>
-        {query.name} ({data.types.map((type) => type.type.name).join(", ")})
-      </h1>
-      <div>
-        <Favorite name={query.name} />
-      </div>
-      <img src={data.sprites.front_default} />
-    </div>
-  );
-}
-```
+   export default async function Pokemon({ query }) {
+     const data = await fetch(
+       `https://pokeapi.co/api/v2/pokemon/${query.name}`
+     ).then((res) => res.json());
+     return (
+       <div>
+         <a href="/">Home</a>
+         <h1>
+           {query.name} ({data.types.map((type) => type.type.name).join(', ')})
+         </h1>
+         <div>
+           <Favorite name={query.name} />
+         </div>
+         <img src={data.sprites.front_default} />
+       </div>
+     );
+   }
+   ```
 
 3. Install `esbuild` as a dependency. It will be used to transpile jsx.
 
-```
-npm install esbuild
-```
+   ```
+   npm install esbuild
+   ```
 
 4. Create new file in `src/loader.js`
 
-```js
-import { relative } from "path";
-import { fileURLToPath } from "url";
-import { renderToString } from "react-dom/server";
+   ```js
+   import { relative } from 'path';
+   import { fileURLToPath } from 'url';
+   import { renderToString } from 'react-dom/server';
 
-export async function load(url, context, defaultLoad) {
-  const result = await defaultLoad(url, context, defaultLoad);
+   export async function load(url, context, defaultLoad) {
+     const result = await defaultLoad(url, context, defaultLoad);
 
-  if (result.format === "module" && !url.includes("?original")) {
-    const code = result.source.toString();
+     if (result.format === 'module' && !url.includes('?original')) {
+       const code = result.source.toString();
 
-    if (/['"]use client['"]/.test(code)) {
-      const source = `
-        export default {
-          $$typeof: Symbol.for('react.client.reference'),
-          name: 'default',
-          filename: ${JSON.stringify(
-            relative(import.meta.dirname, fileURLToPath(url))
-          )},
-        }
-      `;
+       if (/['"]use client['"]/.test(code)) {
+         const source = `
+           export default {
+             $$typeof: Symbol.for('react.client.reference'),
+             name: 'default',
+             filename: ${JSON.stringify(
+               relative(import.meta.dirname, fileURLToPath(url))
+             )},
+           }
+         `;
 
-      return { source, format: "module" };
-    }
-  }
+         return { source, format: 'module' };
+       }
+     }
 
-  return result;
-}
-```
+     return result;
+   }
+   ```
 
-4. Update `src/client.js` to load client modules when parsing JSX.
+5. Update `src/client.js` to load client modules when parsing JSX.
 
-```js
-function parseJSX(key, value) {
-  if (value === "$RE") {
-    return Symbol.for("react.element");
-  } else if (typeof value === "string" && value.startsWith("$$")) {
-    return value.slice(1);
-  } else if (value?.$$typeof === "$RE_M") {
-    return window.__CLIENT_MODULES__[value.filename];
-  } else {
-    return value;
-  }
-}
-```
+   ```js
+   function parseJSX(key, value) {
+     if (value === '$RE') {
+       return Symbol.for('react.element');
+     } else if (typeof value === 'string' && value.startsWith('$$')) {
+       return value.slice(1);
+     } else if (value?.$$typeof === '$RE_M') {
+       return window.__CLIENT_MODULES__[value.filename];
+     } else {
+       return value;
+     }
+   }
+   ```
 
-5. Update `src/server.jsx` to transform client components using `esbuild`
+6. Update `src/server.jsx` to transform client components using `esbuild`
 
    - Add all necessary imports
 
-   ```js
-   import Router from "@koa/router";
-   import { transform } from "esbuild";
-   import Koa from "koa";
-   import { AsyncLocalStorage } from "node:async_hooks";
-   import { readFile, readdir, stat } from "node:fs/promises";
-   import { register } from "node:module";
-   import { join } from "node:path";
-   import { renderToString } from "react-dom/server";
-   ```
+     ```js
+     import Router from '@koa/router';
+     import { transform } from 'esbuild';
+     import Koa from 'koa';
+     import { AsyncLocalStorage } from 'node:async_hooks';
+     import { readFile, readdir, stat } from 'node:fs/promises';
+     import { register } from 'node:module';
+     import { join } from 'node:path';
+     import { renderToString } from 'react-dom/server';
+     ```
 
    - Use `register` method from `node:module` to hook into module resolution and run `loader` before before running application code. Add it after imports
 
-   ```js
-   register("./loader.js", import.meta.url);
-   ```
+     ```js
+     register('./loader.js', import.meta.url);
+     ```
 
    - Change `router` from handling only `/client.js` route to return any `js/jsx` file to the client
 
-   ```js
-   router.get("/(.*).(js|jsx)", async (ctx) => {
-     const content = await readFile(
-       join(import.meta.dirname, ctx.path),
-       "utf8"
-     );
-     const transformed = await transform(content, {
-       loader: "jsx",
-       format: "esm",
-       target: "es2020",
+     ```js
+     router.get('/(.*).(js|jsx)', async (ctx) => {
+       const content = await readFile(
+         join(import.meta.dirname, ctx.path),
+         'utf8'
+       );
+       const transformed = await transform(content, {
+         loader: 'jsx',
+         format: 'esm',
+         target: 'es2020',
+       });
+
+       ctx.type = 'text/javascript';
+       ctx.body = transformed.code;
      });
-
-     ctx.type = "text/javascript";
-     ctx.body = transformed.code;
-   });
-   ```
-
-   -
+     ```
 
 ## Exercises
 
