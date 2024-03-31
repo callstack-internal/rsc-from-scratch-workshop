@@ -546,80 +546,80 @@ router.get('/:path*', async (ctx) => {
 
 1. Make components async
 
-- Change `Index` component to an `async` function
+   - Change `Index` component to an `async` function
 
-  ```js
-  export default async function Index() {
-    ...
-  }
-  ```
+     ```js
+     export default async function Index() {
+       ...
+     }
+     ```
 
-- Change hardcoded pokemon array to `fetch` call to API
+   - Change hardcoded pokemon array to `fetch` call to API
 
-  ```js
-  const data = await fetch(
-    'https://pokeapi.co/api/v2/pokemon?limit=10&offset=0'
-  ).then((res) => res.json());
-  ```
+     ```js
+     const data = await fetch(
+       'https://pokeapi.co/api/v2/pokemon?limit=10&offset=0'
+     ).then((res) => res.json());
+     ```
 
-Repeat this step for `Pokemon` component. Use `https://pokeapi.co/api/v2/pokemon/${query.name}` endpoint.
+   - Repeat this step for `Pokemon` component. Use `https://pokeapi.co/api/v2/pokemon/${query.name}` endpoint.
 
 2. Adjust `src/server.jsx` to handle `async` components - Make `respond`, `renderJSXToClientJSX`, and `Component` an `async` function, make sure to `await` them where necessary
 
-```js
-await respond(...);
-```
+    ```js
+    await respond(...);
+    ```
 
-```js
-async function respond(ctx, jsx) {
-  const clientJSX = await renderJSXToClientJSX(jsx);
+    ```js
+    async function respond(ctx, jsx) {
+      const clientJSX = await renderJSXToClientJSX(jsx);
 
-  ...
-}
-```
-
-```js
-async function renderJSXToClientJSX(jsx) {
-  if (
-    typeof jsx === 'string' ||
-    typeof jsx === 'number' ||
-    typeof jsx === 'boolean' ||
-    jsx == null
-  ) {
-    return jsx;
-  } else if (Array.isArray(jsx)) {
-    return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
-  } else if (jsx != null && typeof jsx === 'object') {
-    if (jsx.$$typeof === Symbol.for('react.element')) {
-      if (typeof jsx.type === 'string') {
-        return {
-          ...jsx,
-          props: await renderJSXToClientJSX(jsx.props),
-        };
-      } else if (typeof jsx.type === 'function') {
-        const Component = jsx.type;
-        const props = jsx.props;
-        const returnedJsx = await Component(props);
-
-        return renderJSXToClientJSX(returnedJsx);
-      } else {
-        throw new Error('Not implemented.');
-      }
-    } else {
-      return Object.fromEntries(
-        await Promise.all(
-          Object.entries(jsx).map(async ([propName, value]) => [
-            propName,
-            await renderJSXToClientJSX(value),
-          ])
-        )
-      );
+      ...
     }
-  } else {
-    throw new Error('Not implemented');
-  }
-}
-```
+    ```
+
+    ```js
+    async function renderJSXToClientJSX(jsx) {
+      if (
+        typeof jsx === 'string' ||
+        typeof jsx === 'number' ||
+        typeof jsx === 'boolean' ||
+        jsx == null
+      ) {
+        return jsx;
+      } else if (Array.isArray(jsx)) {
+        return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
+      } else if (jsx != null && typeof jsx === 'object') {
+        if (jsx.$$typeof === Symbol.for('react.element')) {
+          if (typeof jsx.type === 'string') {
+            return {
+              ...jsx,
+              props: await renderJSXToClientJSX(jsx.props),
+            };
+          } else if (typeof jsx.type === 'function') {
+            const Component = jsx.type;
+            const props = jsx.props;
+            const returnedJsx = await Component(props);
+
+            return renderJSXToClientJSX(returnedJsx);
+          } else {
+            throw new Error('Not implemented.');
+          }
+        } else {
+          return Object.fromEntries(
+            await Promise.all(
+              Object.entries(jsx).map(async ([propName, value]) => [
+                propName,
+                await renderJSXToClientJSX(value),
+              ])
+            )
+          );
+        }
+      } else {
+        throw new Error('Not implemented');
+      }
+    }
+    ```
 
 #### Diff
 
