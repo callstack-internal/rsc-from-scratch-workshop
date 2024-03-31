@@ -328,7 +328,7 @@ export default async function Profile({ id }) {
 3. Install `esbuild` as a dependency. It will be used to transpile jsx.
 
    ```
-   npm install esbuild
+   yarn add esbuild
    ```
 
 4. Create new file in `src/loader.js`
