@@ -536,7 +536,10 @@ router.get('/:path*', async (ctx) => {
 
 ### 4. Async Components
 
-- Execute async components on the server
+- Components that return a promise
+- Can contain async operations like fetching data, reading from the file system, etc.
+- Only the server can render async components
+- The server waits for the promise to resolve before sending the response
 
 #### What we’ll build
 
@@ -627,7 +630,9 @@ router.get('/:path*', async (ctx) => {
 
 ### 5. Client Components
 
-- Add support for client components
+- Traditional interactive React components with hooks, event handlers, etc.
+- Render on the server for SSR and on the client for interactivity
+- Use the convention `'use client'` to mark client components
 
 #### What we’ll build
 
