@@ -18,15 +18,19 @@
     - [2. Client-side navigation](#2-client-side-navigation)
       - [What we’ll build](#what-well-build)
       - [How it’ll work](#how-itll-work)
+      - [Diff](#diff)
     - [3. Rehydration](#3-rehydration)
       - [What we’ll build](#what-well-build-1)
       - [How it’ll work](#how-itll-work-1)
+      - [Diff](#diff-1)
     - [4. Async Components](#4-async-components)
       - [What we’ll build](#what-well-build-2)
       - [How it will work](#how-it-will-work)
+      - [Diff](#diff-2)
     - [5. Client Components](#5-client-components)
       - [What we’ll build](#what-well-build-3)
       - [How it will work](#how-it-will-work-1)
+      - [Diff](#diff-3)
   - [Next steps](#next-steps)
     - [Exercises](#exercises)
     - [Additional resources](#additional-resources)
@@ -294,6 +298,10 @@ router.get('/:path*', async (ctx) => {
      }
      ```
 
+#### Diff
+
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/commit/d472815201a86007f01b25052878f7f8a9d386e8>
+
 ### 3. Rehydration
 
 - Process of "attaching" React to existing HTML that was rendered on the server
@@ -522,6 +530,10 @@ router.get('/:path*', async (ctx) => {
      }
      ```
 
+#### Diff
+
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/commit/f9bf7aa0ade0f2cc1e7a323286a30c85617e34a4>
+
 ### 4. Async Components
 
 - Execute async components on the server
@@ -608,6 +620,10 @@ async function renderJSXToClientJSX(jsx) {
   }
 }
 ```
+
+#### Diff
+
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/commit/cb9f92dc53c9f1e2308db67061ec562d863436f9>
 
 ### 5. Client Components
 
@@ -770,6 +786,10 @@ async function renderJSXToClientJSX(jsx) {
        ctx.body = transformed.code;
      });
      ```
+
+#### Diff
+
+<https://github.com/callstack-internal/rsc-from-scratch-workshop/commit/2bf75f4f43f8d8decb4e95845c3564573cfae296>
 
 ## Next steps
 
