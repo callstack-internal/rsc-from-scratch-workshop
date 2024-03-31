@@ -265,9 +265,231 @@ router.get('/:path*', async (ctx) => {
 
 ### 3. Rehydration
 
+- Process of "attaching" React to existing HTML that was rendered on the server
+- Necessary to make React features work, e.g. diffing the DOM, state, event handlers etc.
+- Diffing the DOM to update only the parts that changed (reconciliation) preserves the existing state
+
 #### What we’ll build
 
 <https://github.com/callstack-internal/rsc-from-scratch-workshop/assets/1174278/a0d1642b-ae67-4abb-ab21-dc0e43240984>
+
+#### How it’ll work
+
+1. Include the JSX in the initial payload
+
+   - Traverse the component tree to get a JSX representation:
+
+     ```js
+     const A = () => <div>Hello</div>;
+
+     const B = () => (
+       <main>
+         <A />
+       </main>
+     );
+
+     renderJSXToClientJSX(<B />); // <main><div>Hello</div></main>
+     ```
+
+     The JSX looks like this:
+
+     ```js
+     {
+       $$typeof: Symbol.for('react.element'),
+       type: 'main',
+       props: {
+         children: {
+           $$typeof: Symbol.for('react.element'),
+           type: 'div',
+           props: {
+             children: 'Hello',
+           },
+         },
+       },
+     }
+     ```
+
+     Implementation of `renderJSXToClientJSX`:
+
+     ```js
+     function renderJSXToClientJSX(jsx) {
+       if (
+         typeof jsx === 'string' ||
+         typeof jsx === 'number' ||
+         typeof jsx === 'boolean' ||
+         jsx == null
+       ) {
+         return jsx;
+       } else if (Array.isArray(jsx)) {
+         return jsx.map((child) => renderJSXToClientJSX(child));
+       } else if (jsx != null && typeof jsx === 'object') {
+         if (jsx.$$typeof === Symbol.for('react.element')) {
+           if (typeof jsx.type === 'string') {
+             return {
+               ...jsx,
+               props: renderJSXToClientJSX(jsx.props),
+             };
+           } else if (typeof jsx.type === 'function') {
+             const Component = jsx.type;
+             const props = jsx.props;
+             const returnedJsx = Component(props);
+
+             return renderJSXToClientJSX(returnedJsx);
+           } else {
+             throw new Error('Not implemented.');
+           }
+         } else {
+           return Object.fromEntries(
+             Object.entries(jsx).map(([propName, value]) => [
+               propName,
+               renderJSXToClientJSX(value),
+             ])
+           );
+         }
+       } else {
+         throw new Error('Not implemented');
+       }
+     }
+     ```
+
+   - Include the JSON representation of the JSX in the initial payload:
+
+     ```js
+     function respond(ctx, jsx) {
+       const clientJSX = renderJSXToClientJSX(jsx);
+       const clientJSXString = JSON.stringify(clientJSX);
+       const clientHtml = html`
+         ${renderToString(clientJSX)}
+
+         <script>
+           window.__INITIAL_CLIENT_JSX_STRING__ = ${JSON.stringify(
+             clientJSXString
+           ).replace(/</g, '\\u003c')};
+         </script>
+         <script type="module" src="/client.js"></script>
+       `;
+
+       ctx.type = 'text/html';
+       ctx.body = clientHtml;
+     }
+     ```
+
+   - JSX includes non-serializable values like symbols (e.g. `Symbol.for('react.element')`), so we need to replace them with a string representation (e.g. `'$RE'`):
+
+     ```js
+     function stringifyJSX(key, value) {
+       if (value === Symbol.for('react.element')) {
+         return '$RE';
+       } else if (typeof value === 'string' && value.startsWith('$')) {
+         return '$' + value;
+       } else {
+         return value;
+       }
+     }
+
+     // ...
+
+     const clientJSXString = JSON.stringify(clientJSX, stringifyJSX);
+     ```
+
+2. On the client, use the JSX to rehydrate the existing HTML
+
+   - Load `react` and `react-dom` on the client by including them in the HTML in the response from the server:
+
+     ```html
+     <script>
+       window.__INITIAL_CLIENT_JSX_STRING__ = ${JSON.stringify(
+         clientJSXString
+       ).replace(/</g, '\\u003c')};
+     </script>
+     <script type="importmap">
+       {
+         "imports": {
+           "react": "https://esm.sh/react@canary",
+           "react-dom/client": "https://esm.sh/react-dom@canary/client"
+         }
+       }
+     </script>
+     <script type="module" src="/client.js"></script>
+     ```
+
+   - Use `hydrateRoot` from `react-dom/client` to hydrate the existing HTML:
+
+     ```js
+     import { hydrateRoot } from 'react-dom/client';
+
+     const root = hydrateRoot(document, getInitialClientJSX());
+
+     function getInitialClientJSX() {
+       const clientJSX = JSON.parse(
+         window.__INITIAL_CLIENT_JSX_STRING__,
+         parseJSX
+       );
+
+       return clientJSX;
+     }
+
+     function parseJSX(key, value) {
+       if (value === '$RE') {
+         return Symbol.for('react.element');
+       } else if (typeof value === 'string' && value.startsWith('$$')) {
+         return value.slice(1);
+       } else {
+         return value;
+       }
+     }
+     ```
+
+3. Instead of fetching HTML and overwriting DOM, fetch JSX and rerender content
+
+   - Add the ability to fetch the JSX from the server with a query parameter in `respond`:
+
+     ```js
+     function respond(ctx, jsx) {
+       const clientJSX = renderJSXToClientJSX(jsx);
+
+       if (ctx.request.query.jsx != null) {
+         const clientJSXString = JSON.stringify(clientJSX, stringifyJSX);
+
+         ctx.type = 'application/json';
+         ctx.body = clientJSXString;
+
+         return;
+       }
+
+       // ...
+     }
+     ```
+
+   - Replace the `fetchClientHTML` function with `fetchClientJSX`:
+
+     ```js
+     async function fetchClientJSX(pathname) {
+       const url = new URL(pathname, location.href);
+
+       url.searchParams.set('jsx', true);
+
+       const response = await fetch(url.href);
+       const clientJSXString = await response.text();
+       const clientJSX = JSON.parse(clientJSXString, parseJSX);
+
+       return clientJSX;
+     }
+     ```
+
+   - Update the `navigate` function to fetch the JSX instead of the HTML:
+
+     ```js
+     async function navigate(pathname) {
+       currentPathname = pathname;
+
+       const clientJSX = await fetchClientJSX(pathname);
+
+       if (pathname === currentPathname) {
+         root.render(clientJSX);
+       }
+     }
+     ```
 
 ### 4. Async Components
 
@@ -281,80 +503,80 @@ router.get('/:path*', async (ctx) => {
 
 1. Make components async
 
-   - Change `Index` component to an `async` function
+- Change `Index` component to an `async` function
 
-     ```js
-     export default async function Index() {
-       ...
-     }
-     ```
+  ```js
+  export default async function Index() {
+    ...
+  }
+  ```
 
-   - Change hardcoded pokemon array to `fetch` call to API
+- Change hardcoded pokemon array to `fetch` call to API
 
-     ```js
-     const data = await fetch(
-       'https://pokeapi.co/api/v2/pokemon?limit=10&offset=0'
-     ).then((res) => res.json());
-     ```
+  ```js
+  const data = await fetch(
+    'https://pokeapi.co/api/v2/pokemon?limit=10&offset=0'
+  ).then((res) => res.json());
+  ```
 
-   Repeat this step for `Pokemon` component. Use `https://pokeapi.co/api/v2/pokemon/${query.name}` endpoint.
+Repeat this step for `Pokemon` component. Use `https://pokeapi.co/api/v2/pokemon/${query.name}` endpoint.
 
 2. Adjust `src/server.jsx` to handle `async` components - Make `respond`, `renderJSXToClientJSX`, and `Component` an `async` function, make sure to `await` them where necessary
 
-   ```js
-   await respond(...);
-   ```
+```js
+await respond(...);
+```
 
-   ```js
-   async function respond(ctx, jsx) {
-     const clientJSX = await renderJSXToClientJSX(jsx);
+```js
+async function respond(ctx, jsx) {
+  const clientJSX = await renderJSXToClientJSX(jsx);
 
-     ...
-   }
-   ```
+  ...
+}
+```
 
-   ```js
-   async function renderJSXToClientJSX(jsx) {
-     if (
-       typeof jsx === 'string' ||
-       typeof jsx === 'number' ||
-       typeof jsx === 'boolean' ||
-       jsx == null
-     ) {
-       return jsx;
-     } else if (Array.isArray(jsx)) {
-       return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
-     } else if (jsx != null && typeof jsx === 'object') {
-       if (jsx.$$typeof === Symbol.for('react.element')) {
-         if (typeof jsx.type === 'string') {
-           return {
-             ...jsx,
-             props: await renderJSXToClientJSX(jsx.props),
-           };
-         } else if (typeof jsx.type === 'function') {
-           const Component = jsx.type;
-           const props = jsx.props;
-           const returnedJsx = await Component(props);
+```js
+async function renderJSXToClientJSX(jsx) {
+  if (
+    typeof jsx === 'string' ||
+    typeof jsx === 'number' ||
+    typeof jsx === 'boolean' ||
+    jsx == null
+  ) {
+    return jsx;
+  } else if (Array.isArray(jsx)) {
+    return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
+  } else if (jsx != null && typeof jsx === 'object') {
+    if (jsx.$$typeof === Symbol.for('react.element')) {
+      if (typeof jsx.type === 'string') {
+        return {
+          ...jsx,
+          props: await renderJSXToClientJSX(jsx.props),
+        };
+      } else if (typeof jsx.type === 'function') {
+        const Component = jsx.type;
+        const props = jsx.props;
+        const returnedJsx = await Component(props);
 
-           return renderJSXToClientJSX(returnedJsx);
-         } else {
-           throw new Error('Not implemented.');
-         }
-       } else {
-         return Object.fromEntries(
-           await Promise.all(
-             Object.entries(jsx).map(async ([propName, value]) => [
-               propName,
-               await renderJSXToClientJSX(value),
-             ])
-           )
-         );
-       }
-     } else {
-       throw new Error('Not implemented');
-     }
-   }
-   ```
+        return renderJSXToClientJSX(returnedJsx);
+      } else {
+        throw new Error('Not implemented.');
+      }
+    } else {
+      return Object.fromEntries(
+        await Promise.all(
+          Object.entries(jsx).map(async ([propName, value]) => [
+            propName,
+            await renderJSXToClientJSX(value),
+          ])
+        )
+      );
+    }
+  } else {
+    throw new Error('Not implemented');
+  }
+}
+```
 
 ### 5. Client Components
 
