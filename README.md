@@ -32,6 +32,7 @@
       - [How it will work](#how-it-will-work-1)
       - [Diff](#diff-3)
   - [Next steps](#next-steps)
+    - [Final implementation](#final-implementation)
     - [Exercises](#exercises)
     - [Additional resources](#additional-resources)
 
@@ -797,6 +798,10 @@ router.get('/:path*', async (ctx) => {
 <https://github.com/callstack-internal/rsc-from-scratch-workshop/commit/2bf75f4f43f8d8decb4e95845c3564573cfae296>
 
 ## Next steps
+
+### Final implementation
+
+Check the code for the final implementation in the [`dev`](https://github.com/callstack-internal/rsc-from-scratch-workshop/tree/dev) branch.
 
 ### Exercises
 
