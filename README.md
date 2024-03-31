@@ -1,5 +1,36 @@
 # React Server Components from Scratch
 
+- [React Server Components from Scratch](#react-server-components-from-scratch)
+  - [Agenda](#agenda)
+  - [Introduction](#introduction)
+    - [What are React Server Components?](#what-are-react-server-components)
+    - [Differences from Client Components](#differences-from-client-components)
+    - [Benefits](#benefits)
+    - [Example](#example)
+  - [Workshop](#workshop)
+    - [1. First steps](#1-first-steps)
+      - [Environment setup](#environment-setup)
+      - [Project setup](#project-setup)
+      - [Project Overview](#project-overview)
+        - [File structure](#file-structure)
+        - [Dependencies](#dependencies)
+        - [Server-side routing](#server-side-routing)
+    - [2. Client-side navigation](#2-client-side-navigation)
+      - [What we’ll build](#what-well-build)
+      - [How it’ll work](#how-itll-work)
+    - [3. Rehydration](#3-rehydration)
+      - [What we’ll build](#what-well-build-1)
+      - [How it’ll work](#how-itll-work-1)
+    - [4. Async Components](#4-async-components)
+      - [What we’ll build](#what-well-build-2)
+      - [How it will work](#how-it-will-work)
+    - [5. Client Components](#5-client-components)
+      - [What we’ll build](#what-well-build-3)
+      - [How it will work](#how-it-will-work-1)
+  - [Next steps](#next-steps)
+    - [Exercises](#exercises)
+    - [Additional resources](#additional-resources)
+
 ## Agenda
 
 **Total time**: 3h
@@ -740,7 +771,9 @@ async function renderJSXToClientJSX(jsx) {
      });
      ```
 
-## Exercises
+## Next steps
+
+### Exercises
 
 - Try more types of async operations like reading from the file system
 - Add support for `React.Fragment` and `React.Suspense`
@@ -748,7 +781,7 @@ async function renderJSXToClientJSX(jsx) {
 - Cache JSX to reuse them on browser back/forward
 - Try third-party libraries and see what's missing
 
-## Additional resources
+### Additional resources
 
 - [RFC: React Server Components](https://github.com/reactjs/rfcs/blob/main/text/0188-server-components.md) by [@en_js](https://twitter.com/en_js)
 - [React Server Components (Video) - Introduction](https://reactjs.org/server-components)
