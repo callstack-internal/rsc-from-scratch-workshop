@@ -570,59 +570,59 @@ router.get('/:path*', async (ctx) => {
 
 2. Adjust `src/server.jsx` to handle `async` components - Make `respond`, `renderJSXToClientJSX`, and `Component` an `async` function, make sure to `await` them where necessary:
 
-   ```js
-   await respond(...);
-   ```
+   ```diff
+   -  respond(
+   +  await respond(
+       ctx,
 
-   ```js
-   async function respond(ctx, jsx) {
-     const clientJSX = await renderJSXToClientJSX(jsx);
+   ...
 
-     // ...
-   }
-   ```
+   -function respond(ctx, jsx) {
+   -  const clientJSX = renderJSXToClientJSX(jsx);
+   +async function respond(ctx, jsx) {
+   +  const clientJSX = await renderJSXToClientJSX(jsx);
 
-   ```js
-   async function renderJSXToClientJSX(jsx) {
-     if (
-       typeof jsx === 'string' ||
-       typeof jsx === 'number' ||
-       typeof jsx === 'boolean' ||
-       jsx == null
-     ) {
-       return jsx;
+   ...
+
+   -function renderJSXToClientJSX(jsx) {
+   +async function renderJSXToClientJSX(jsx) {
+
+   ...
+
      } else if (Array.isArray(jsx)) {
-       return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
-     } else if (jsx != null && typeof jsx === 'object') {
-       if (jsx.$$typeof === Symbol.for('react.element')) {
+   -    return jsx.map((child) => renderJSXToClientJSX(child));
+   +    return Promise.all(jsx.map((child) => renderJSXToClientJSX(child)));
+
+   ...
+
          if (typeof jsx.type === 'string') {
            return {
              ...jsx,
-             props: await renderJSXToClientJSX(jsx.props),
+   -          props: renderJSXToClientJSX(jsx.props),
+   +          props: await renderJSXToClientJSX(jsx.props),
            };
          } else if (typeof jsx.type === 'function') {
            const Component = jsx.type;
            const props = jsx.props;
-           const returnedJsx = await Component(props);
+   -        const returnedJsx = Component(props);
+   +        const returnedJsx = await Component(props);
 
-           return renderJSXToClientJSX(returnedJsx);
-         } else {
-           throw new Error('Not implemented.');
-         }
-       } else {
+   ...
+
          return Object.fromEntries(
-           await Promise.all(
-             Object.entries(jsx).map(async ([propName, value]) => [
-               propName,
-               await renderJSXToClientJSX(value),
-             ])
-           )
+   -        Object.entries(jsx).map(([propName, value]) => [
+   -          propName,
+   -          renderJSXToClientJSX(value),
+   -        ])
+   +        await Promise.all(
+   +          Object.entries(jsx).map(async ([propName, value]) => [
+   +            propName,
+   +            await renderJSXToClientJSX(value),
+   +          ])
+   +        )
          );
        }
      } else {
-       throw new Error('Not implemented');
-     }
-   }
    ```
 
 #### Diff
