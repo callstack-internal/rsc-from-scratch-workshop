@@ -940,6 +940,7 @@ Check the code for the final implementation in the [`dev`](https://github.com/ca
 - Request only the client components used in a page instead of including all of them
 - Cache JSX to reuse them on browser back/forward
 - Try third-party libraries and see what's missing
+- Implement server actions
 
 ### Additional resources
 
