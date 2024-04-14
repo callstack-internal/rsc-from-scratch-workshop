@@ -108,7 +108,7 @@ export default async function Profile({ id }) {
 
 #### Environment setup
 
-- Node.js 20
+- Node.js 20.11 / 21.2 or higher
 - Yarn 1
 
 #### Project setup
